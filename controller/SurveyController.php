@@ -218,11 +218,84 @@ class SurveyController extends SiteController{
 	{
 		if(isset($id) && $id)
 		{
-			$this->adminLayout("surveys/report/view");
+			// Get Survey
+			$survey = $this->surveyModel->getRow($id);
+
+			// Get Questions
+			$questions = $this->questionModel->getWhere(['questions.*'], ['questions.survey_id' => $id]);
+			
+			if(isset($questions) && $questions && is_array($questions) && count($questions) > 0)
+			{
+				foreach($questions as $k => $v)
+				{
+					if(isset($v['frm_option']) && $v['frm_option'] != "")
+					{
+						$questions[$k]['frm_option'] = json_decode($v['frm_option'], true);
+					}
+
+					$questions[$k]['answer_data'] = [];
+
+					$questions[$k]['answers'] = $this->answersModel->getWhere(['answers.answer'], [
+						'answers.survey_id' => $id,
+						'answers.question_id' => $v['id']
+					]);
+
+					foreach($questions[$k]['answers'] as $kA => $vA)
+					{
+						$answers = isset($vA['answer']) && $vA['answer'] && $vA['answer'] != "" ? json_decode($vA['answer']) : null;
+
+						if(isset($answers) && $answers && is_array($answers))
+						{
+							foreach($answers as $kD => $vD)
+							{
+								if(isset($vD) && $vD && in_array($vD, $questions[$k]['frm_option']))
+								{
+									if(isset($questions[$k]['answer_data'][$vD]) && $questions[$k]['answer_data'][$vD])
+									{
+										$questions[$k]['answer_data'][$vD]++;
+									}
+									else
+									{
+										$questions[$k]['answer_data'][$vD] = 1;
+									}
+								}
+							}
+						}
+						elseif(isset($answers) && $answers)
+						{
+							if(isset($answers) && $answers && is_array($questions[$k]['frm_option']) && in_array($answers, $questions[$k]['frm_option']))
+							{
+								if(isset($questions[$k]['answer_data'][$answers]) && $questions[$k]['answer_data'][$answers])
+								{
+									$questions[$k]['answer_data'][$answers]++;
+								}
+								else
+								{
+									$questions[$k]['answer_data'][$answers] = 1;
+								}
+							}
+						}
+					}
+				}
+		 		$survey['questions'] = $questions;
+			}
+			else
+			{
+		 		$survey['questions'] = [];
+			}
+			
+			$this->adminLayout("surveys/report/view", [
+				'surveys' => $survey
+			]);
 		}
 		else
 		{
-			$this->adminLayout("surveys/report/index");
+			// Get All Surveys
+			$surveys = $this->surveyModel->getListing();
+
+			$this->adminLayout("surveys/report/index", [
+				"surveys" =>  isset($surveys) && $surveys ? $surveys : []
+			]);
 		}
 
 	}
