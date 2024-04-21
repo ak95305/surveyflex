@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Remove index.php from the middle of the URL
+    RewriteCond %{REQUEST_URI} ^/survey_flex/(.*)/index\.php/(.*)$
+    RewriteRule ^ /survey_flex/%1/%2 [L,R=301]
+
+    # If the file or directory does not exist, redirect to index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ /survey_flex/index.php/$1 [L]
+</IfModule>
